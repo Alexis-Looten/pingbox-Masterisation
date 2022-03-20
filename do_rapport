@@ -1,0 +1,35 @@
+#!/bin/bash
+
+nbr_mach=$(wc -l < "buffer_rapport.csv")
+let "nbr_mach -= 1"
+
+tbl_synt=()
+while IFS=, read -r col1 col2
+do
+	tbl_synt[${#tbl_synt[@]}]=$col1
+	tbl_synt[${#tbl_synt[@]}]=$col2
+done < rapport.csv
+
+nbr_tour=0
+pos=2
+tbl_host=()
+host=2
+reste=3
+mac=0
+
+while [ $nbr_tour != $nbr_mach ]
+do
+	path="adresses_mac/${tbl_synt[$pos]}.txt"
+        while read ligne
+        do
+                tbl_host[${#tbl_host[@]}]=$ligne
+        done < $path
+
+	echo "${tbl_synt[$host]},${tbl_synt[$reste]},${tbl_host[$mac]}" >> rapport.csv
+
+	let "host += 2"
+	let "reste += 2"
+	let "mac += 1"
+	let "pos += 2"
+	let "nbr_tour += 1"
+done

@@ -1,0 +1,5 @@
+Hostname,Ip_wifi,Passerelle_wifi,DNS_wifi,Ip_ethernet,Passerelle_ethernet,DNS_ethernet,MAC_wifi,MAC_ethernet
+-1,dhcp,dhcp,dhcp,dhcp,dhcp,dhcp
+-0,dhcp,dhcp,dhcp,dhcp,dhcp,dhcp
+Hostname1,ip_masque_wifi1,gateway_wifi_1,dns_wifi_1,ip_masque_eth_1,gateway_eth_1,dns_eth_1
+host-0,dhcp,dhcp,dhcp,dhcp,dhcp,dhcp

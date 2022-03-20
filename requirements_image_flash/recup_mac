@@ -1,0 +1,19 @@
+#!/bin/bash
+
+echo "Saisissez le nom du user du pc master : "
+read name_master
+echo "Saisissez l'adresse IP du pc master : "
+read ip_master
+echo "Saisissez le répertoire de destination des fichier scontenants les adresses MAC (en chemin absolu) : "
+read path_master
+
+mac_wifi=$(cat /sys/class/net/wlan0/address)
+mac_eth=$(cat /sys/class/net/eth0/address)
+hostname=$(cat /etc/hostname)
+
+echo "$mac_wifi,$mac_eth" > $hostname.txt
+
+scp $hostname.txt $name_master@$ip_master:$path_master
+
+sleep 1
+rm $hostname.txt

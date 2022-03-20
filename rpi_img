@@ -1,0 +1,367 @@
+#!/bin/bash
+
+echo "Saisir le nom de votre user : "
+read user
+
+#Indiquez comme valeur de cette variable le chemin vers l'image que vous souhaitez flash
+path="master.img"
+
+#Fonction utlisée pour configurer les raspberry clonés
+function Fclone()
+{
+  local user=$1
+
+  #Configuration du hostanme
+  local hostname=$2
+
+  echo $hostname > /media/$user/etc/hostname
+  echo "127.0.0.1       localhost" > /media/$user/etc/hosts
+  echo "127.0.0.1       "${hostname} >> /media/$user/etc/hosts
+  echo "127.0.1.1       "${hostname} >> /media/$user/etc/hosts
+
+  #Configuration wifi
+  local ssid=$3
+  local mdpwifi=$4
+
+  echo -e "ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev\nupdate_config=1\ncountry=FR\n\nnetwork={" > /media/$user/etc/wpa_supplicant/wpa_supplicant.conf
+  echo '        ssid="'$ssid'"' >> /media/$user/etc/wpa_supplicant/wpa_supplicant.conf
+  echo '        psk="'$mdpwifi'"' >> /media/$user/etc/wpa_supplicant/wpa_supplicant.conf
+  echo "}" >> /media/$user/etc/wpa_supplicant/wpa_supplicant.conf
+  echo "" >> /media/$user/etc/wpa_supplicant/wpa_supplicant.conf
+
+  local proxyipaddress=$5
+  local proxyport=$6
+  local proxyidentifiant=$7
+  local proxymdp=$8
+
+  if [ "$proxy" = "oui" ];
+  then
+    if [ "$proxylogin" = "oui" ];
+    then
+      #Configuration du proxy
+      echo 'export http_proxy="http://'$proxyidentifiant':'proxymdp'@'$proxyipaddress':'$proxyport'"' > /media/$user/etc/environment
+      echo 'export https_proxy="http://'$proxyidentifiant':'proxymdp'@'$proxyipaddress':'$proxyport'"' >> /media/$user/etc/environment
+    else
+      #Configuration du proxy
+      echo 'export http_proxy="http://'$proxyipaddress':'$proxyport'"' > /media/$user/etc/environment
+      echo 'export https_proxy="https://'$proxyipaddress':'$proxyport'"' >> /media/$user/etc/environment
+    fi
+  fi
+
+  echo "$hostname_cl,$ssid,$mdpwifi,$proxyipaddress,$proxyport,$proxyidentifiant,$proxymdp" > save_clone.csv
+  echo "$hostname,$dhcp,$dhcp" >> buffer_rapport.csv
+}
+
+#Fonction utilisée pour configurer les raspberry de manière indépendante grâce au fichier de conf
+function Ftxt()
+{
+  local user=$1
+  local numligne=$2
+
+  #Lecture du fichier de conf et attribution de son contenue dans un tableau
+  tbl_conf=()
+  while IFS=, read -r col1 col2 col3 col4 col5 col6 col7 col8 col9 col10 col11 col12 col13 col14 col15 col16
+  do
+    tbl_conf[${#tbl_conf[@]}]=$col1
+    tbl_conf[${#tbl_conf[@]}]=$col2
+    tbl_conf[${#tbl_conf[@]}]=$col3
+    tbl_conf[${#tbl_conf[@]}]=$col4
+    tbl_conf[${#tbl_conf[@]}]=$col5
+    tbl_conf[${#tbl_conf[@]}]=$col6
+    tbl_conf[${#tbl_conf[@]}]=$col7
+    tbl_conf[${#tbl_conf[@]}]=$col8
+    tbl_conf[${#tbl_conf[@]}]=$col9
+    tbl_conf[${#tbl_conf[@]}]=$col10
+    tbl_conf[${#tbl_conf[@]}]=$col11
+    tbl_conf[${#tbl_conf[@]}]=$col12
+    tbl_conf[${#tbl_conf[@]}]=$col13
+    tbl_conf[${#tbl_conf[@]}]=$col14
+    tbl_conf[${#tbl_conf[@]}]=$col15
+    tbl_conf[${#tbl_conf[@]}]=$col16
+  done < rpi_conf.csv
+
+  #Récupération des variables en fonction de leur emplacement dans le tableau
+  local hostname=${tbl_conf[$numligne]}
+
+  let "numligne += 1"
+  local ssid=${tbl_conf[$numligne]}
+  let "numligne += 1"
+  local mdpwifi=${tbl_conf[$numligne]}
+
+  #Configuration du hostanme
+  echo $hostname > /media/$user/etc/hostname
+  echo "127.0.0.1       localhost" > /media/$user/etc/hosts
+  echo "127.0.0.1       "${hostname} >> /media/$user/etc/hosts
+  echo "127.0.1.1       "${hostname} >> /media/$user/etc/hosts
+
+  #Configuration wifi
+  echo -e "ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev\nupdate_config=1\ncountry=FR\n\nnetwork={" > /media/$user/etc/wpa_supplicant/wpa_supplicant.conf
+  echo '        ssid="'$ssid'"' >> /media/$user/etc/wpa_supplicant/wpa_supplicant.conf
+  echo '        psk="'$mdpwifi'"' >> /media/$user/etc/wpa_supplicant/wpa_supplicant.conf
+  echo "}" >> /media/$user/etc/wpa_supplicant/wpa_supplicant.conf
+  echo "" >> /media/$user/etc/wpa_supplicant/wpa_supplicant.conf
+
+  let "numligne += 1"
+  local proxy=${tbl_conf[$numligne]}
+  let "numligne += 1"
+  local proxyipaddress=${tbl_conf[$numligne]}
+  let "numligne += 1"
+  local proxyport=${tbl_conf[$numligne]}
+  let "numligne += 1"
+  local proxyidentifiant=${tbl_conf[$numligne]}
+  let "numligne += 1"
+  local proxymdp=${tbl_conf[$numligne]}
+
+
+  if [ "$proxy" = "proxy" ];
+  then
+    #Configuration du proxy
+    echo 'export http_proxy="http://'$proxyipaddress':'$proxyport'"' > /media/$user/etc/environment
+    echo 'export https_proxy="https://'$proxyipaddress':'$proxyport'"' >> /media/$user/etc/environment
+  fi
+
+  if [ "$proxy" = "proxylogin" ];
+  then
+    #Configuration du proxy
+    echo 'export http_proxy="http://'$proxyidentifiant':'proxymdp'@'$proxyipaddress':'$proxyport'"' > /media/$user/etc/environment
+    echo 'export https_proxy="http://'$proxyidentifiant':'proxymdp'@'$proxyipaddress':'$proxyport'"' > /media/$user/etc/environment
+  fi
+
+  ip_wifi="dhcp"
+  gateway_wifi="dhcp"
+  dns_wifi="dhcp"
+  ip_eth="dhcp"
+  gateway_eth="dhcp"
+  dns_eth="dhcp"
+
+  let "numligne += 1"
+  if [ "${tbl_conf[$numligne]}" = "static_wifi" ];
+  then
+    let "numligne += 1"
+    ip_wifi=${tbl_conf[$numligne]}
+    let "numligne += 1"
+    gateway_wifi=${tbl_conf[$numligne]}
+    let "numligne += 1"
+    dns_wifi=${tbl_conf[$numligne]}
+
+    #Attribution de la configuration ip à la carte wifi
+    echo "interface wlan0" >> /media/$user/etc/dhcpcd.conf
+
+    #Configuration de l'adresse Ip v4
+    echo "static ip_addres=$ip_wifi" >> /media/$user/etc/dhcpcd.conf
+
+    #Configuration de la passerelle
+    echo "static routers=$gateway_wifi" >> /media/$user/etc/dhcpcd.conf
+
+    #Configuration du Domain Name Service
+    echo "static domain_name_serveur=$dns_wifi" >> /media/$user/etc/dhcpcd.conf
+  else
+    let "numligne += 3"
+  fi
+
+  let "numligne += 1"
+  if [ "${tbl_conf[$numligne]}" = "static_eth" ];
+  then
+    let "numligne += 1"
+    ip_eth=${tbl_conf[$numligne]}
+    let "numligne += 1"
+    gateway_eth=${tbl_conf[$numligne]}
+    let "numligne += 1"
+    dns_eth=${tbl_conf[$numligne]}
+
+    #Attribution de la configuration ip à la carte wifi
+    echo "interface eth0" >> /media/$user/etc/dhcpcd.conf
+
+    #Configuration de l'adresse Ip v4
+    echo "static ip_addres=$ip_eth" >> /media/$user/etc/dhcpcd.conf
+
+    #Configuration de la passerelle
+    echo "static routers=$gateway_eth" >> /media/$user/etc/dhcpcd.conf
+
+    #Configuration du Domain Name Service
+    echo "static domain_name_serveur=$dns_eth" >> /media/$user/etc/dhcpcd.conf
+  fi
+
+  echo "$hostname,$ip_wifi,$gateway_wifi,$dns_wifi,$ip_eth,$gateway_eth,$dns_eth" >> buffer_rapport.csv
+
+  }
+
+  function flashclone()
+  {
+  local lettre=$1
+  local hostnameclone=$2
+  if [ -e /dev/sd$lettre ]
+  then
+    rpi-imager --cli --disable-verify $path /dev/sd$lettre
+    sleep 2
+    sudo mount /dev/sd"$lettre"2 /media/$user
+    Fclone $user $hostnameclone $ssid $mdpwifi $proxyipaddress $proxyport $proxyidentifiant $proxymdp
+    sleep 2
+    sudo umount /media/$user
+  fi
+
+  }
+
+  function flashtxt()
+  {
+  lettre=$1
+  if [ -e /dev/sd$lettre ]
+    then
+      rpi-imager --cli --disable-verify $path /dev/sd$lettre
+      sleep 2
+      sudo mount /dev/sd"$lettre"2 /media/$user
+      Ftxt $user $ligne_start
+      sleep 2
+      sudo umount /media/$user
+    fi
+  }
+
+  #Fonction qui interprète la réponse de l'utilisateur et fourni le bon type de configuration en fonction de la réponse
+  function flash()
+  {
+  if [ "$rep" = "oui" ];
+  then
+    echo "Utiliser la dernière configuration ? (oui / non)"
+    read rep_conf_clone
+
+    if [ "$rep_conf_clone" = "oui" ];
+    then
+
+      echo "à partir de quelle numéro dois-je nommer les hostname ?"
+      read numhost
+
+      tbl_sc=()
+      while IFS=, read -r col1 col2 col3 col4 col5 col6 col7
+      do
+        tbl_sc[${#tbl_sc[@]}]=$col1
+        tbl_sc[${#tbl_sc[@]}]=$col2
+        tbl_sc[${#tbl_sc[@]}]=$col3
+        tbl_sc[${#tbl_sc[@]}]=$col4
+        tbl_sc[${#tbl_sc[@]}]=$col5
+        tbl_sc[${#tbl_sc[@]}]=$col6
+        tbl_sc[${#tbl_sc[@]}]=$col7
+      done < save_clone.csv
+
+      hostname_cl=${tbl_sc[0]}
+      ssid=${tbl_sc[1]}
+      mdpwifi=${tbl_sc[2]}
+      proxyipaddress=${tbl_sc[3]}
+      proxyport=${tbl_sc[4]}
+      proxyidentifiant=${tbl_sc[5]}
+      proxymdp=${tbl_sc[6]}
+
+      #Attribution des numéros de clone
+      hostname0=$hostname_cl"-"$numhost
+      let "numhost += 1"
+      hostname1=$hostname_cl"-"$numhost
+      let "numhost += 1"
+      hostname2=$hostname_cl"-"$numhost
+      let "numhost += 1"
+      hostname3=$hostname_cl"-"$numhost
+      let "numhost += 1"
+      hostname4=$hostname_cl"-"$numhost
+      let "numhost += 1"
+      hostname5=$hostname_cl"-"$numhost
+      let "numhost += 1"
+      hostname6=$hostname_cl"-"$numhost
+
+      flashclone b $hostname0
+      flashclone c $hostname1
+      flashclone d $hostname2
+      flashclone e $hostname3
+      flashclone f $hostname4
+      flashclone g $hostname5
+      flashclone h $hostname6
+
+    else
+      echo "Saisir le Hostname que vous souhaitez attribuer aux Raspberry Pi : "
+      read hostname_cl
+      echo "à partir de quelle numéro dois-je nommer les hostname ?"
+      read numhost
+
+      #Attribution des numéros de clone
+      hostname0=$hostname_cl"-"$numhost
+      let "numhost += 1"
+      hostname1=$hostname_cl"-"$numhost
+      let "numhost += 1"
+      hostname2=$hostname_cl"-"$numhost
+      let "numhost += 1"
+      hostname3=$hostname_cl"-"$numhost
+      let "numhost += 1"
+      hostname4=$hostname_cl"-"$numhost
+      let "numhost += 1"
+      hostname5=$hostname_cl"-"$numhost
+      let "numhost += 1"
+      hostname6=$hostname_cl"-"$numhost
+
+      echo "Saisir le SSID de la configuration Wifi que vous souhaitez appliquer aux Raspberry Pi : "
+      read ssid
+      echo "Saisir le Mot de passe de la configuration Wifi que vous souhaitez appliquer aux Raspberry Pi : "
+      read mdpwifi
+
+      echo "Dois-je configurer un proxy ? (oui/non)"
+      read proxy
+
+      if [ "$proxy" = "oui" ];
+      then
+        echo "Saisir l'adresse Ip du proxy que vous souhaitez configurer pour le Raspberry Pi : "
+                    read proxyipaddress
+                    echo "Saisir le port du proxy : "
+                    read proxyport
+
+        echo "Le proxy necessite il un login ? (oui/non)"
+        read proxylogin
+
+        if [ "$proxylogin" = "oui" ];
+        then
+          echo "Quel est l'identifiant du proxy ?"
+          read proxyidentifiant
+          echo "Quel est le mot de passe du proxy ?"
+          read proxymdp
+        fi
+      fi
+
+      flashclone b $hostname0
+      flashclone c $hostname1
+      flashclone d $hostname2
+      flashclone e $hostname3
+      flashclone f $hostname4
+      flashclone g $hostname5
+      flashclone h $hostname6
+    fi
+
+  elif [ "$rep" = "non" ];
+  then
+
+    ligne_start=0
+    echo "Combien de machines ont déja été préparées ? "
+    read nbrmach
+
+    let "ligne_start += $nbrmach*16"
+    flashtxt b
+    let "ligne_start += 16"
+    flashtxt c
+    let "ligne_start += 16"
+    flashtxt d
+    let "ligne_start += 16"
+    flashtxt e
+    let "ligne_start += 16"
+    flashtxt f
+    let "ligne_start += 16"
+    flashtxt g
+    let "ligne_start += 16"
+    flashtxt h
+
+  else
+    echo "La réponse saisie est incorrecte, veuillez saisir oui ou non : "
+    read rep
+    flash
+  fi
+}
+
+proxy="non"
+proxylogin="non"
+dhcp="dhcp,dhcp,dhcp"
+echo "Dois-je créer des clones ? (oui/non)"
+read rep
+flash
