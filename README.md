@@ -30,6 +30,6 @@ il faut installer l’application **Cluster SSH**:
 
 Pour cela, tapez la commande suivante dans l’invite de commande : ```sudo apt-get install clusterssh```. 
 Ne pas oublier de mettre à jour sa machine avec la commande suivante ``sudo apt-get update && sudo apt-get upgrade`` avant d’installer Cluster SSH.
-Pour plus d’aide concernant Cluster SSH consultez le document : **[Raspberry Pi : Aide](https://pingcode.io/pingflow/products/pingplay/pingbox/-/wikis/Aide-Raspberry)**.
+Pour plus d’aide concernant Cluster SSH consultez le document : **[Raspberry Pi : Aide](https://github.com/Alexis-Looten/pingbox-Masterisation/wiki/Aide-Raspberry)**.
 
 Il est très important que tous les fichiers se trouvent dans le même dossier.
