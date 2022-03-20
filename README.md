@@ -6,7 +6,7 @@
 * Raspberry Pi image
 * Hub USB
 * MicroSD + USB-MicroSD Reader
-* PingBox's image to flash Raspberry sd card (**mother.img**) => [Wiki PingBox Accueil](https://pingcode.io/pingflow/products/pingplay/pingbox/-/wikis/home) 
+* PingBox's image to flash Raspberry sd card (**mother.img**) => [Wiki PingBox Accueil](https://github.com/Alexis-Looten/pingbox-Masterisation/wiki) 
 
 ## Faire en sorte que l’image occupe tout l’espace disponible sur la carte Micro SD :
 Utilisez la commande : ```sudo raspi-config```
